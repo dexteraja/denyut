@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------- */
+/* Design tokens — "neon-glass on midnight" system                        */
+/* Base: near-black midnight. Accent duo: electric violet + hot coral.    */
+/* Lime is reserved exclusively for live/viral signal, never decoration.  */
+/* ---------------------------------------------------------------------- */
+:root {
+  --midnight: #0a0a0f;
+  --midnight-soft: #121218;
+  --violet: #8b5cf6;
+  --violet-soft: #a78bfa;
+  --coral: #ff5c7a;
+  --lime: #c6ff3a;
+  --glass-fg: #f5f4f8;
+  --glass-fg-dim: #b5b3c2;
+
+  --background: var(--midnight);
+  --foreground: var(--glass-fg);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-midnight: var(--midnight);
+  --color-midnight-soft: var(--midnight-soft);
+  --color-violet: var(--violet);
+  --color-violet-soft: var(--violet-soft);
+  --color-coral: var(--coral);
+  --color-lime: var(--lime);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Glass surfaces — used only for control layers (nav, action rail, sheets),
+   never as decorative wrappers around content. */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.glass-strong {
+  background: rgba(18, 18, 24, 0.72);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Snap-scroll feed */
+.snap-feed {
+  scroll-snap-type: y mandatory;
+  overflow-y: scroll;
+  overscroll-behavior-y: contain;
+}
+
+.snap-feed::-webkit-scrollbar {
+  display: none;
+}
+.snap-feed {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.snap-slide {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Focus visibility, kept accessible against the dark background */
+:focus-visible {
+  outline: 2px solid var(--violet-soft);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes heart-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+.animate-heart-pop {
+  animation: heart-pop 0.7s ease-out forwards;
+}
+
+@keyframes slide-up-sheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: slide-up-sheet 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes marquee-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.animate-live-pulse {
+  animation: marquee-pulse 1.6s ease-in-out infinite;
+}
+
+/* Vinyl disc spin — slower than default spin for natural turntable feel */
+@keyframes vinyl-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-vinyl-spin {
+  animation: vinyl-spin 3s linear infinite;
+}
+.animate-vinyl-spin.paused {
+  animation-play-state: paused;
+}
+
+/* Marquee scroll for audio title */
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.animate-marquee {
+  animation: marquee-scroll 8s linear infinite;
+}
+
+/* Video progress bar gradient */
+.progress-bar-gradient {
+  background: linear-gradient(90deg, var(--violet), var(--coral));
+}
+
+/* Comment sheet overlay — allow backdrop click while sheet is interactive */
+.comment-backdrop {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Onboarding interest chip glow when selected */
+.interest-chip-glow {
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}

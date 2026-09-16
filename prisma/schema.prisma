@@ -1,0 +1,196 @@
+// Prisma schema — MongoDB
+// Run `npx prisma generate` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Auth (NextAuth-compatible shapes)
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  username      String   @unique
+  email         String   @unique
+  emailVerified DateTime?
+  password      String? // hashed with bcrypt; null for OAuth-only accounts
+  image         String?
+  bio           String?
+  createdAt     DateTime @default(now())
+
+  // Onboarding + FYP personalization
+  interests     Interest[] @relation(fields: [interestIds], references: [id])
+  interestIds   String[]   @db.ObjectId
+  topicWeights  TopicWeight[]
+
+  // Social graph
+  followerIds   String[] @db.ObjectId
+  followingIds  String[] @db.ObjectId
+
+  videos        Video[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  comments      Comment[]
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Content taxonomy + FYP weighting
+// ---------------------------------------------------------------------------
+
+model Interest {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  slug   String  @unique // e.g. "hewan-peliharaan"
+  label  String  // e.g. "Hewan Peliharaan"
+  emoji  String?
+
+  users  User[]  @relation(fields: [userIds], references: [id])
+  userIds String[] @db.ObjectId
+  videos Video[]
+
+  @@map("interests")
+}
+
+// Per-user, per-topic affinity score used to weight the FYP ranking.
+// Incremented on positive interactions (like > comment > watch-through).
+model TopicWeight {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  topicSlug  String
+  score      Float    @default(0)
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicSlug])
+  @@map("topic_weights")
+}
+
+// ---------------------------------------------------------------------------
+// Video content
+// ---------------------------------------------------------------------------
+
+enum VideoStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Video {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  authorId      String      @db.ObjectId
+  caption       String
+  // Original upload + transcoded delivery URLs (CDN / S3 / Mux playback id, etc.)
+  sourceUrl     String
+  playbackUrl   String?
+  hlsUrl        String?
+  thumbnailUrl  String
+  durationSec   Float
+  width         Int
+  height        Int
+  status        VideoStatus @default(PROCESSING)
+
+  interests     Interest[]  @relation(fields: [interestIds], references: [id])
+  interestIds   String[]    @db.ObjectId
+  hashtags      String[]
+
+  viewCount     Int         @default(0)
+  likeCount     Int         @default(0)
+  commentCount  Int         @default(0)
+  shareCount    Int         @default(0)
+  bookmarkCount Int         @default(0)
+
+  // Global engagement score used for the "viral / discovery" slice of the feed
+  viralScore    Float       @default(0)
+
+  createdAt     DateTime    @default(now())
+
+  author   User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  likes    Like[]
+  bookmarks Bookmark[]
+  comments Comment[]
+
+  @@index([viralScore])
+  @@index([createdAt])
+  @@map("videos")
+}
+
+model Like {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  videoId   String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@map("likes")
+}
+
+model Bookmark {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  videoId   String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@map("bookmarks")
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  videoId   String   @db.ObjectId
+  text      String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
